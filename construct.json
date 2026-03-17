@@ -1,0 +1,34 @@
+{
+  "name": "hypha",
+  "version": "0.2.0",
+  "type": "construct",
+  "description": "A neutral historian and builder's companion for the Berachain ecosystem. Maps the Proof of Liquidity mycelium network — tracing how incentives, liquidity, and governance flow between protocols, validators, and vaults.",
+  "tagline": "Depth historian for Berachain's living network",
+  "author": "El Capitan (apDAO)",
+  "framework": "loa",
+  "commands": ["map", "dig", "flows", "build", "bounds"],
+  "skills": [
+    "pol-mapper",
+    "governance-historian",
+    "protocol-surveyor",
+    "price-archaeologist",
+    "builder-translator"
+  ],
+  "context_files": [
+    "grimoires/loa/context/identity.md",
+    "grimoires/loa/context/berachain-core.md",
+    "grimoires/loa/context/protocols.md",
+    "grimoires/loa/context/apdao.md",
+    "grimoires/loa/context/price-history.md",
+    "grimoires/loa/context/boundaries.md",
+    "grimoires/loa/context/brips.md",
+    "grimoires/loa/context/foundation-strategy.md"
+  ],
+  "entry": "BUTTERFREEZONE.md",
+  "trust_level": "L2",
+  "last_updated": "2026-03-17",
+  "tags": ["berachain", "pol", "defi", "governance", "historian", "builder"],
+  "links": {
+    "constructs": "https://constructs.network/catalog/hypha"
+  }
+}
