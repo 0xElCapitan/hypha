@@ -94,14 +94,54 @@ expectedBlockTime = initialTime + (TargetBlockTime × (currentHeight - initialHe
 
 ---
 
-## BRIP-0004: Enshrined Proof of Liquidity
+## BRIP-0004: Enshrined Proof of Liquidity Reward Distribution
 
-*Note: BRIP-0004 document was not included in this knowledge base. It is referenced as a dependency by BRIP-0005, BRIP-0006, and BRIP-0009. Key outputs referenced in those BRIPs:*
+**Type**: Core | **Status**: Review | **Authors**: rezbera, calbera | **Created**: Jun 19, 2025
 
-- Introduced **real-time cutting board execution** (eliminated queue delays)
-- Introduced **`valRewardAllocator` role** — a hot key for cutting board management separate from the cold `operator` key
-- Introduced **`ParentProposerPubkey`** field in execution block headers — enables enshrined PoL reward distribution by identifying the block proposer on-chain
-- Required bera-geth fork (bera-geth `core/types/block.go` modification)
+**Requires**: BRIP-0001 (EL fork)
+
+### Problem
+Berachain's PoL requires regular incentive fulfillment via the `distributeFor` smart contract function — currently triggered by external actors (bots). This creates five problems: gas dependency, timing uncertainty, required bot infrastructure, economic inefficiency, and cutting board queue latency (delays between strategy updates and application).
+
+### Solution
+Enshrine `distributeFor` calls **at the execution layer** — automatically executed at the beginning of every block, before all regular transactions, without external dependencies. Combined with **real-time cutting board execution** (eliminating queue delays), this accelerates the full PoL flywheel.
+
+### Key Specifications
+
+**Enshrined `distributeFor` function:**
+```solidity
+function distributeFor(bytes calldata pubkey) external onlySystemCall {
+    _distributeFor(pubkey, uint64(block.timestamp));
+}
+```
+- Called only by system address (`0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE`)
+- Previous proposer pubkey passed from consensus layer via `BerachainPayloadAttributes.ParentProposerPubkey` (48-byte BLS public key)
+- No Merkle proofs required — trusts consensus layer data
+- Non-reverting by design: unexpected reverts silently ignored to preserve network stability
+- External `distributeFor` disabled after hard fork activation to prevent frontrunning
+- **Top-of-block distribution is functionally equivalent to same-block** — no other transactions execute between end of current block and enshrined call
+
+**Real-time cutting board execution:**
+- Queue validation changed from `startBlock > block.number + rewardAllocationBlockDelay` → `startBlock >= block.number`
+- Validators can now update cutting board strategy with complete chain state visibility, effective immediately for the next block's distribution
+
+**`valRewardAllocator` role (operator separation):**
+- New hot key role for cutting board updates — separate from cold `operator` key
+- `valRewardAllocator` can update cutting board config but cannot claim rewards or access other validator privileges
+- Cold `operator` key retains full control: can update or revoke `valRewardAllocator` designation at any time
+- Compromise recovery: operator can immediately revoke and replace a compromised hot key
+- Backward compatible: validators not using delegation continue managing cutting board with primary key
+
+**`ParentProposerPubkey` in execution block headers:**
+- New field added to execution block headers in bera-geth (`core/types/block.go`)
+- Enables identifying the previous block's proposer for reward distribution — foundational for all enshrined PoL operations
+- Required beacon-kit to pass proposer pubkey from consensus layer via `BerachainPayloadAttributes`
+
+### Why This Matters for PoL
+Before BRIP-0004: validators set cutting boards days in advance, bots triggered distributions with gas costs, timing was unpredictable. After BRIP-0004: distributions are automatic, free, and deterministic every block; validators can respond to market conditions in real time with full chain state visibility. This is the foundational upgrade that makes BRIP-0005 and BRIP-0006 possible.
+
+### Future Work (noted in BRIP)
+A simple default cutting board strategy built into Reth — pre-distribution optimization without configuration. Predecessor to BRIP-0005's sidecar approach.
 
 ---
 
@@ -242,27 +282,62 @@ Moving to a single execution client increases centralization risk: if bera-reth 
 
 ---
 
+## BRIP-0008: Validator Effective Balance Hysteresis Constant Update
+
+**Type**: Core | **Status**: Discussion | **Author**: P-OPS Team (Discussion Facilitator) | **Created**: Nov 13, 2025
+
+### Problem
+The current hysteresis constants for validator effective balance create unnecessary economic friction and capital inefficiency — particularly the upward threshold.
+
+**How it works now**: Effective balance updates in 10,000 BERA increments. To register an increase (e.g., 250K → 260K effective balance), a validator's actual balance must exceed the next increment by 12,500 BERA — meaning they need 262,500 BERA to be recognized at 260K. The required buffer is **125% of the increment size**.
+
+**Result**: Capital stranded between recognition thresholds, doing nothing. With 310K voting power, actual balance could sit anywhere in a 308K–322.5K range without triggering an effective balance update.
+
+### Current Constants
+| Constant | Current Value | Description |
+|----------|---------------|-------------|
+| `effectiveBalanceIncrement` | 10,000 BERA | Base unit for effective balance changes |
+| `hysteresisQuotient` | 4 | Base divisor |
+| `hysteresisUpwardMultiplier` | 5 | Upward buffer = (increment / quotient) × multiplier = 12,500 BERA |
+| `hysteresisDownwardMultiplier` | 1 | Downward buffer = 2,500 BERA |
+
+### Proposed Changes (P-OPS suggestion — values TBD pending community consensus)
+- **Downward threshold**: ~100 BERA buffer (prevent spurious drops from triggering effective balance changes)
+  - Achievable with: `hysteresisQuotient = 10,000`, `hysteresisDownwardMultiplier = 100`
+- **Upward threshold**: ~10% of increment (1,000 BERA) to recognize staked capital faster
+  - Achievable with: `hysteresisUpwardMultiplier = 10`, `hysteresisQuotient = 100`
+- `effectiveBalanceIncrement`: Open for discussion — whether 10,000 BERA granularity remains appropriate
+
+### Status
+Discussion phase. No final values set — requires consensus from Berachain Team and community on optimal upward buffer percentage (110%? 105%?) and whether to change the base increment. Community comment from camembear: 100–1,000 BERA buffer feels right; current 12,500 BERA threshold "strands a lot of capital."
+
+No hard fork required for constants-only change, but a network upgrade is needed to apply new values.
+
+---
+
 ## BRIP Dependency Map
 
 ```
 BRIP-0001 (EL Fork)
     └── BRIP-0002 (Gas Fees) — requires fork to enforce
+    └── BRIP-0004 (Enshrined PoL) — requires forked EL clients
     └── BRIP-0009 (Deprecate bera-geth) — builds on fork decision
 
-BRIP-0004 (Enshrined PoL) [not in knowledge base]
+BRIP-0004 (Enshrined PoL)
     └── BRIP-0005 (Validator Sidecar) — requires real-time cutting board
     └── BRIP-0006 (Baseline Cutting Board) — requires real-time cutting board
     └── BRIP-0009 (Deprecate bera-geth) — ParentProposerPubkey migration
 
 BRIP-0007 (Preconfirmations) — motivates BRIP-0009 (needs reth-sdk)
+
+BRIP-0008 (Effective Balance Hysteresis) — standalone, no dependencies
 ```
 
 ---
 
 ## Known Gaps
 
-- **BRIP-0004 full text**: Not in this knowledge base. Referenced indirectly through dependent BRIPs.
-- **BRIP-0008**: Not included — unknown status/content.
 - **BRIP-0005 strategy algorithm**: Marked TODO in the draft; not fully specified.
 - **BRIP-0006 implementation**: Bot and smart contracts to be open-sourced; not yet deployed.
 - **BRIP-0007 sequencer**: Not yet deployed as of March 17, 2026; Phase 1 rollout ongoing.
+- **BRIP-0008 final values**: Discussion phase only — `hysteresisQuotient`, multipliers, and `effectiveBalanceIncrement` target values not yet determined.
