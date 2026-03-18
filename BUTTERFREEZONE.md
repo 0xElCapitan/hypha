@@ -72,7 +72,7 @@ grimoires/
 <!-- provenance: OPERATIONAL -->
 
 - **Vase Finance**: Pre-launch as of March 2026. Docs pending. Placeholder acknowledged.
-- **BRIP-0004 / BRIP-0008**: Full text not in knowledge base. Referenced via dependent BRIPs.
+- **BRIP-0008 final values**: Discussion phase only — hysteresis constants not yet determined by community.
 - **THJ internal perspective**: Member/contributor view only. Staff collaboration pending post-launch.
 - **Price data**: CoinGecko snapshots through March 6, 2026. Not real-time.
 - **Furthermore data**: Single snapshot March 17, 2026. Not live.
