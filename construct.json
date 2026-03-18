@@ -4,8 +4,11 @@
   "type": "construct",
   "description": "A neutral historian and builder's companion for the Berachain ecosystem. Maps the Proof of Liquidity mycelium network — tracing how incentives, liquidity, and governance flow between protocols, validators, and vaults.",
   "tagline": "Depth historian for Berachain's living network",
+  "short_description": "Depth historian for Berachain's living network",
   "author": "El Capitan (apDAO)",
   "framework": "loa",
+  "domain": ["analytics", "web3"],
+  "visibility": "public",
   "commands": ["map", "dig", "flows", "build", "bounds"],
   "skills": [
     "pol-mapper",
