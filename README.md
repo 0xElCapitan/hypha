@@ -2,7 +2,7 @@
 
 **A neutral historian and builder's companion for the Berachain ecosystem.**
 
-> *Named after fungal hyphae — the microscopic threads that form mycelium and route nutrients through the network. Hypha maps how Proof of Liquidity routes incentives between protocols, validators, and vaults as one connected system. It maps, not markets.*
+> *Named after fungal hyphae — the microscopic threads that form mycelium and route nutrients through the network. Hypha maps how Proof of Liquidity routes incentives between protocols, validators, and vaults as one connected system. It does not pick winners. It maps terrain.*
 
 ---
 
@@ -69,7 +69,7 @@ grimoires/loa/context/
 ## Known Gaps (v0.2.0)
 
 - Vase Finance: pre-launch, docs pending
-- BRIP-0004, BRIP-0008: not in knowledge base
+- BRIP-0008 final values: discussion phase, hysteresis constants TBD
 - THJ internal perspective: member/contributor view only
 - Real-time data: static as of March 17, 2026
 
